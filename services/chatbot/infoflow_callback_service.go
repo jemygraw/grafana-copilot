@@ -161,13 +161,13 @@ func NotifyUserResult(callbackBody *infoflow.CallbackBody, suggestedDashboards [
 	body := make([]infoflow.MessageBody, 0, 2)
 	body = append(body, infoflow.MessageBody{
 		Type:    infoflow.MessageBodyTypeText,
-		Content: "为您找到如下看板:\n",
+		Content: "为您找到如下看板:",
 	})
 	// add the suggested kanban links
 	for _, dashboard := range suggestedDashboards {
 		body = append(body, infoflow.MessageBody{
 			Type:    infoflow.MessageBodyTypeText,
-			Content: fmt.Sprintf("%s: ", dashboard.Title),
+			Content: fmt.Sprintf("\n%s: ", dashboard.Title),
 		})
 		body = append(body, infoflow.MessageBody{
 			Type: infoflow.MessageBodyTypeLink,
