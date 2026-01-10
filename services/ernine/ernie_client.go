@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jemygraw/grafana-copilot/conf"
+	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/openai"
 )
 
@@ -17,7 +18,7 @@ func GetErnieResponse(ctx context.Context, appConfig *conf.Config, llmInput stri
 		err = fmt.Errorf("create openai client err: %v", err)
 		return
 	}
-	llmOutput, err = client.Call(ctx, llmInput)
+	llmOutput, err = client.Call(ctx, llmInput, llms.WithTemperature(0.7))
 	if err != nil {
 		err = fmt.Errorf("call openai err: %v", err)
 		return

@@ -10,6 +10,7 @@ import (
 	"github.com/jemygraw/grafana-copilot/services/grafana"
 	"log/slog"
 	"os"
+	"strings"
 	"text/template"
 )
 
@@ -31,17 +32,24 @@ func HandleUserInput(callbackBody *infoflow.CallbackBody) {
 	}
 	if userCmd == GrafanaCmd {
 		// handle grafana dashboard matching
-		outputMsg, err := handleGrafanaCopilot(callbackBody)
-		if err != nil {
-			outputMsg = fmt.Sprintf("Handle grafana copilot err: %s", err.Error())
-			slog.Error(outputMsg)
+		suggestedDashboards, err := handleGrafanaCopilot(callbackBody)
+		if err != nil || len(suggestedDashboards) == 0 {
+			var errMsg string
+			if err != nil {
+				errMsg = fmt.Sprintf("Handle grafana copilot err: %s", err.Error())
+			} else {
+				errMsg = "没有找到匹配的仪表盘，请尝试其他问题"
+			}
+			slog.Error(errMsg)
+			NotifyUserError(callbackBody, errMsg)
+		} else {
+			NotifyUserResult(callbackBody, suggestedDashboards)
 		}
-		NotifyUserResult(callbackBody, outputMsg)
 	}
 	return
 }
 
-func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (msg string, err error) {
+func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboards []grafana.Dashboard, err error) {
 	ctx := context.Background()
 	// collect user message
 	userInput := callbackBody.Message.GetUserInput()
@@ -59,7 +67,7 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (msg string, err 
 	}
 	// covert dashboard metas to markdown table
 	markdownBuf := bytes.NewBuffer(nil)
-	markdownBuf.WriteString("|Title|URL|")
+	markdownBuf.WriteString("|Title|Path|")
 	markdownBuf.WriteString("|---|---|")
 	for _, dashboardMeta := range dashboardMetas {
 		markdownBuf.WriteString("|")
@@ -79,6 +87,7 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (msg string, err 
 		err = fmt.Errorf("render template err: %w", err)
 		return
 	}
+	slog.Debug(fmt.Sprintf("llm input:\n %s", llmInput))
 	// call openai to get resp
 	llmOutput, err := ernie.GetErnieResponse(ctx, conf.AppConfig, llmInput)
 	if err != nil {
@@ -86,7 +95,24 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (msg string, err 
 		return
 	}
 	// return msg
-	msg = llmOutput
+	slog.Debug(fmt.Sprintf("llm output:\n %s", llmOutput))
+	textOutput := ernie.GetResponseTextContent(llmOutput)
+	textLines := strings.Split(textOutput, "\n")
+	suggestedDashboards = make([]grafana.Dashboard, 0, 2)
+	grafanaHost := strings.TrimSuffix(conf.AppConfig.GrafanaHost, "/")
+	for _, line := range textLines {
+		slog.Debug(fmt.Sprintf("get llm text line, %s", line))
+		items := strings.SplitN(line, "=", 2)
+		if len(items) != 2 {
+			continue
+		}
+		title := items[0]
+		path := items[1]
+		suggestedDashboards = append(suggestedDashboards, grafana.Dashboard{
+			Title: title,
+			URL:   fmt.Sprintf("%s%s", grafanaHost, path),
+		})
+	}
 	return
 }
 
@@ -111,7 +137,7 @@ func RenderTemplate(promptPath string, renderCtx any) (msg string, err error) {
 	return
 }
 
-func NotifyUserResult(callbackBody *infoflow.CallbackBody, outputMsg string) {
+func NotifyUserError(callbackBody *infoflow.CallbackBody, outputMsg string) {
 	// send the reply
 	client := infoflow.NewClient(&infoflow.Config{
 		WebhookAddress: conf.AppConfig.InfoflowRobotWebhookAddress,
@@ -120,6 +146,42 @@ func NotifyUserResult(callbackBody *infoflow.CallbackBody, outputMsg string) {
 	fromUserId := callbackBody.Message.Header.FromUserId
 	options := infoflow.MessageOptions{AtUserIds: []string{fromUserId}}
 	_, err := client.SendTextMessage([]int{groupId}, outputMsg, &options)
+	if err != nil {
+		slog.Error(fmt.Sprintf("send message error: %v", err))
+	}
+}
+
+func NotifyUserResult(callbackBody *infoflow.CallbackBody, suggestedDashboards []grafana.Dashboard) {
+	// send the reply
+	client := infoflow.NewClient(&infoflow.Config{
+		WebhookAddress: conf.AppConfig.InfoflowRobotWebhookAddress,
+	})
+	groupId := callbackBody.GroupId
+	fromUserId := callbackBody.Message.Header.FromUserId
+	body := make([]infoflow.MessageBody, 0, 2)
+	body = append(body, infoflow.MessageBody{
+		Type:    infoflow.MessageBodyTypeText,
+		Content: "为您找到如下看板:\n",
+	})
+	// add the suggested kanban links
+	for _, dashboard := range suggestedDashboards {
+		body = append(body, infoflow.MessageBody{
+			Type:    infoflow.MessageBodyTypeText,
+			Content: fmt.Sprintf("%s: ", dashboard.Title),
+		})
+		body = append(body, infoflow.MessageBody{
+			Type: infoflow.MessageBodyTypeLink,
+			Href: dashboard.URL,
+		})
+	}
+	// check the options
+	options := infoflow.MessageOptions{AtUserIds: []string{fromUserId}}
+	body = append(body, options.CreateAtBody())
+	message := infoflow.Message{
+		Header: infoflow.MessageHeader{ToId: []int{groupId}},
+		Body:   body,
+	}
+	_, err := client.SendMessage(&message)
 	if err != nil {
 		slog.Error(fmt.Sprintf("send message error: %v", err))
 	}

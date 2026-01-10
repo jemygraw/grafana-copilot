@@ -2,7 +2,7 @@
 返回格式如下：
 
 ```text
-<dashboard title>: <dashboard url>
+<Title>=<Path>
 ```
 
 以下为看板列表：

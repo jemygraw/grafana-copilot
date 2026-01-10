@@ -34,3 +34,6 @@ go.work.sum
 # Internal Use
 /__excluded/
 
+# Temp Folders
+/bin/
+/output/

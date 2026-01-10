@@ -1,5 +1,5 @@
 package infoflow
- 
+
 const (
 	MessageBodyTypeText     = "TEXT"
 	MessageBodyTypeLink     = "LINK"

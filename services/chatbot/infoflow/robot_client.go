@@ -58,7 +58,7 @@ func (c *Client) SendTextMessage(groupIds []int, content string, options *Messag
 		Header: MessageHeader{ToId: groupIds},
 		Body:   body,
 	}
-	return c.sendMessage(&message)
+	return c.SendMessage(&message)
 }
 
 func (c *Client) SendLinkMessage(groupIds []int, link string, options *MessageOptions) (data ExtraData, err error) {
@@ -75,7 +75,7 @@ func (c *Client) SendLinkMessage(groupIds []int, link string, options *MessageOp
 		Header: MessageHeader{ToId: groupIds},
 		Body:   body,
 	}
-	return c.sendMessage(&message)
+	return c.SendMessage(&message)
 }
 
 func (c *Client) SendImageMessage(groupIds []int, imageBytes []byte) (data ExtraData, err error) {
@@ -88,7 +88,7 @@ func (c *Client) SendImageMessage(groupIds []int, imageBytes []byte) (data Extra
 			},
 		},
 	}
-	return c.sendMessage(&message)
+	return c.SendMessage(&message)
 }
 
 func (c *Client) SendMarkdownMessage(groupIds []int, content string) (data ExtraData, err error) {
@@ -101,10 +101,10 @@ func (c *Client) SendMarkdownMessage(groupIds []int, content string) (data Extra
 			},
 		},
 	}
-	return c.sendMessage(&message)
+	return c.SendMessage(&message)
 }
 
-func (c *Client) sendMessage(message *Message) (data ExtraData, err error) {
+func (c *Client) SendMessage(message *Message) (data ExtraData, err error) {
 	reqMethod := http.MethodPost
 	reqBody, mErr := json.Marshal(&RequestBody{Message: *message})
 	if mErr != nil {
