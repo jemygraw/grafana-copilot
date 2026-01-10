@@ -99,7 +99,7 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 	textOutput := ernie.GetResponseTextContent(llmOutput)
 	textLines := strings.Split(textOutput, "\n")
 	suggestedDashboards = make([]grafana.Dashboard, 0, 2)
-	grafanaHost := strings.TrimSuffix(conf.AppConfig.GrafanaHost, "/")
+	grafanaBaseURL := strings.TrimSuffix(conf.AppConfig.GrafanaBaseURL, "/")
 	for _, line := range textLines {
 		slog.Debug(fmt.Sprintf("get llm text line, %s", line))
 		items := strings.SplitN(line, "=", 2)
@@ -110,7 +110,7 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 		path := items[1]
 		suggestedDashboards = append(suggestedDashboards, grafana.Dashboard{
 			Title: title,
-			URL:   fmt.Sprintf("%s%s", grafanaHost, path),
+			URL:   fmt.Sprintf("%s%s", grafanaBaseURL, path),
 		})
 	}
 	return

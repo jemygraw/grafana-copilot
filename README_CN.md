@@ -11,6 +11,12 @@
 
 ### 百度如流机器人
 
+从机器人的设置中获取相关配置。
+
+![](images/infoflow-robot-settings.png)
+
+直接通过斜杠命令触发看板搜索。
+
 ![](images/infoflow-example.png)
 
 ## 使用步骤
