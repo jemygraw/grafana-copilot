@@ -30,7 +30,8 @@ RUN apk add --no-cache \
 RUN mkdir -p /data
 
 # Copy binary from builder
-COPY --from=builder /app/grafana-copilot .
+COPY --from=builder /app/grafana-copilot  .
+COPY --from=builder /app/prompts ./prompts/
 
 # Expose port
 EXPOSE 8080

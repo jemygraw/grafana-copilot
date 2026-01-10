@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	GrafanaCmd = "grafana"
+	GrafanaCmd = "Grafana"
 )
 
 type GrafanaCopilotContext struct {
