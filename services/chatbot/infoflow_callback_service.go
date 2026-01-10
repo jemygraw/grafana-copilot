@@ -69,13 +69,13 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 	dashboardMetaMap := make(map[string]grafana.Dashboard)
 	// covert dashboard metas to markdown table
 	markdownBuf := bytes.NewBuffer(nil)
-	markdownBuf.WriteString("|Title|Uid|")
+	markdownBuf.WriteString("|Uid|Title|")
 	markdownBuf.WriteString("|---|---|")
 	for _, dashboardMeta := range dashboardMetas {
 		markdownBuf.WriteString("|")
-		markdownBuf.WriteString(dashboardMeta.Title)
-		markdownBuf.WriteString("|")
 		markdownBuf.WriteString(dashboardMeta.Uid)
+		markdownBuf.WriteString("|")
+		markdownBuf.WriteString(dashboardMeta.Title)
 		markdownBuf.WriteString("|")
 		markdownBuf.WriteString("\n")
 		dashboardMetaMap[dashboardMeta.Uid] = dashboardMeta
@@ -121,8 +121,8 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 		if len(items) != 2 {
 			continue
 		}
-		title := items[0]
-		uid := items[1]
+		uid := items[0]
+		title := items[1]
 		if dashboard, ok := dashboardMetaMap[uid]; ok {
 			suggestedDashboards = append(suggestedDashboards, grafana.Dashboard{
 				Title: title,
