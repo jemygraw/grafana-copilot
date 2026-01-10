@@ -1,0 +1,9 @@
+#!/bin/bash
+export GRAFANA_HOST=http://localhost:3000
+export GRAFANA_TOKEN=xxxxxx
+export INFOFLOW_ROBOT_WEBHOOK_ADDRESS=
+export INFOFLOW_ROBOT_TOKEN=
+export INFOFLOW_ROBOT_ENCODING_AES_KEY=
+export OPENAI_API_KEY=
+export OPENAI_API_BASE=
+export OPENAI_MODEL=
