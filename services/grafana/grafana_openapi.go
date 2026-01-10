@@ -14,6 +14,7 @@ var grafanaClient = http.Client{
 }
 
 type Dashboard struct {
+	Uid   string `json:"uid"`
 	Title string `json:"title"`
 	URL   string `json:"url"`
 }

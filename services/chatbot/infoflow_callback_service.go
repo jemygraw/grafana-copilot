@@ -8,6 +8,7 @@ import (
 	"github.com/jemygraw/grafana-copilot/services/chatbot/infoflow"
 	ernie "github.com/jemygraw/grafana-copilot/services/ernine"
 	"github.com/jemygraw/grafana-copilot/services/grafana"
+	"github.com/tmc/langchaingo/llms"
 	"log/slog"
 	"os"
 	"strings"
@@ -65,16 +66,19 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 		err = fmt.Errorf("list grafana dashboard metas err: %v", err)
 		return
 	}
+	dashboardMetaMap := make(map[string]grafana.Dashboard)
 	// covert dashboard metas to markdown table
 	markdownBuf := bytes.NewBuffer(nil)
-	markdownBuf.WriteString("|Title|Path|")
+	markdownBuf.WriteString("|Title|Uid|")
 	markdownBuf.WriteString("|---|---|")
 	for _, dashboardMeta := range dashboardMetas {
 		markdownBuf.WriteString("|")
 		markdownBuf.WriteString(dashboardMeta.Title)
 		markdownBuf.WriteString("|")
-		markdownBuf.WriteString(dashboardMeta.URL)
+		markdownBuf.WriteString(dashboardMeta.Uid)
 		markdownBuf.WriteString("|")
+		markdownBuf.WriteString("\n")
+		dashboardMetaMap[dashboardMeta.Uid] = dashboardMeta
 	}
 	// prepare render context
 	renderCtx := GrafanaCopilotContext{
@@ -82,14 +86,25 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 		UserInput:         userInput,
 	}
 	// prepare llm input
-	llmInput, err := RenderTemplate("prompts/grafana_copilot_prompt.md", renderCtx)
+	systemMessage, err := RenderTemplate("prompts/grafana_copilot_prompt.md", renderCtx)
 	if err != nil {
 		err = fmt.Errorf("render template err: %w", err)
 		return
 	}
-	slog.Debug(fmt.Sprintf("llm input:\n %s", llmInput))
+	slog.Debug(fmt.Sprintf("llm input:\n %s", systemMessage))
 	// call openai to get resp
-	llmOutput, err := ernie.GetErnieResponse(ctx, conf.AppConfig, llmInput)
+	llmOutput, err := ernie.GetErnieResponse(ctx, conf.AppConfig, []llms.MessageContent{
+		{
+			Role: llms.ChatMessageTypeSystem,
+			Parts: []llms.ContentPart{
+				llms.TextContent{Text: systemMessage},
+			}},
+		{
+			Role: llms.ChatMessageTypeHuman,
+			Parts: []llms.ContentPart{
+				llms.TextContent{Text: userInput},
+			}},
+	})
 	if err != nil {
 		err = fmt.Errorf("get llm response err: %w", err)
 		return
@@ -107,11 +122,13 @@ func handleGrafanaCopilot(callbackBody *infoflow.CallbackBody) (suggestedDashboa
 			continue
 		}
 		title := items[0]
-		path := items[1]
-		suggestedDashboards = append(suggestedDashboards, grafana.Dashboard{
-			Title: title,
-			URL:   fmt.Sprintf("%s%s", grafanaBaseURL, path),
-		})
+		uid := items[1]
+		if dashboard, ok := dashboardMetaMap[uid]; ok {
+			suggestedDashboards = append(suggestedDashboards, grafana.Dashboard{
+				Title: title,
+				URL:   fmt.Sprintf("%s%s", grafanaBaseURL, dashboard.URL),
+			})
+		}
 	}
 	return
 }

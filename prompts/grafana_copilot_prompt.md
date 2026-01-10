@@ -2,11 +2,8 @@
 返回格式如下：
 
 ```text
-<Title>=<Path>
+<Title>=<Uid>
 ```
 
 以下为看板列表：
 {{ .GrafanaDashboards }}
-
-以下为用户问题：
-{{ .UserInput }}
