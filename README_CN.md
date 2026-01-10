@@ -54,6 +54,8 @@ docker run --env GRAFANA_HOST=xxx \
       -p 8080:8080 grafana-copilot:1.0
 ```
 
+其中有个可选环境变量 `GRAFANA_BASE_URL` 用于指定一个不同于 `GRAFANA_HOST` 的域名，这个域名用于构造看板链接（因为 Grafana 有时会使用不同的域名进行跳转）。
+
 ### Kubernetes 部署
 
 过于简单，不再赘述。
