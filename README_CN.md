@@ -15,6 +15,12 @@
 
 ![](images/infoflow-robot-settings.png)
 
+其中回调地址的路径为：
+
+```markdown
+/api/chatbot/infoflow-robot-callback
+```
+
 直接通过斜杠命令触发看板搜索。
 
 ![](images/infoflow-example.png)

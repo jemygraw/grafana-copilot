@@ -42,7 +42,7 @@ func main() {
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	http.HandleFunc("/infoflow-robot-callback", controllers.ReceiveInfoflowRobotMessage)
+	http.HandleFunc("/api/chatbot/infoflow-robot-callback", controllers.ReceiveInfoflowRobotMessage)
 	slog.Info(fmt.Sprintf("Starting grafana copilot server on %s:%d ...", listenHost, listenPort))
 	err := http.ListenAndServe(fmt.Sprintf("%s:%d", listenHost, listenPort), nil)
 	if err != nil {
